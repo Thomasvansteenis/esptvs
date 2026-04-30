@@ -190,7 +190,7 @@ void ZehnderRF::loop(void) {
 
   // Periodic state heartbeat (once every 5s)
   static uint32_t lastStateLog = 0;
-  if (millis() - lastStateLog > 5000) {
+  if (millis() - lastStateLog > 60000) {
     lastStateLog = millis();
     ESP_LOGI(TAG, "heartbeat state_=%d rfState_=%d newSetting=%d", this->state_, this->rfState_, newSetting);
   }
