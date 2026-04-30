@@ -99,7 +99,7 @@ void nRF905::loop() {
 
   uint8_t rawStatus = this->readStatus();
   uint8_t state = rawStatus & ((1 << NRF905_STATUS_DR) | (1 << NRF905_STATUS_AM));
-  if (millis() - lastRawLog > 5000) {
+  if (millis() - lastRawLog > 60000) {
     lastRawLog = millis();
     ESP_LOGI(TAG, "raw status=0x%02X (DR=%u AM=%u)", rawStatus,
              (rawStatus >> NRF905_STATUS_DR) & 1, (rawStatus >> NRF905_STATUS_AM) & 1);
