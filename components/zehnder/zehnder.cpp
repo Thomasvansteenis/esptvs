@@ -188,6 +188,13 @@ void ZehnderRF::loop(void) {
   // Run RF handler
   this->rfHandler();
 
+  // Periodic state heartbeat (once every 5s)
+  static uint32_t lastStateLog = 0;
+  if (millis() - lastStateLog > 5000) {
+    lastStateLog = millis();
+    ESP_LOGI(TAG, "heartbeat state_=%d rfState_=%d newSetting=%d", this->state_, this->rfState_, newSetting);
+  }
+
   switch (this->state_) {
     case StateStartup:
       // Wait until started up
@@ -713,7 +720,7 @@ void ZehnderRF::setSpeed(const uint8_t paramSpeed, const uint8_t paramTimer) {
     newSetting = false;
     this->state_ = StateWaitSetSpeedResponse;
   } else {
-    ESP_LOGD(TAG, "Invalid state, I'm trying later again");
+    ESP_LOGW(TAG, "Invalid state (state_=%d, rfState_=%d), queued for retry", this->state_, this->rfState_);
     newSpeed = speed;
     newTimer = timer;
     newSetting = true;
