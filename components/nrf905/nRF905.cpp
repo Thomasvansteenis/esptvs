@@ -94,9 +94,16 @@ void nRF905::dump_config() {
 void nRF905::loop() {
   static uint8_t lastState = 0x00;
   static bool addrMatch;
+  static uint32_t lastRawLog = 0;
   uint8_t buffer[NRF905_MAX_FRAMESIZE];
 
-  uint8_t state = this->readStatus() & ((1 << NRF905_STATUS_DR) | (1 << NRF905_STATUS_AM));
+  uint8_t rawStatus = this->readStatus();
+  uint8_t state = rawStatus & ((1 << NRF905_STATUS_DR) | (1 << NRF905_STATUS_AM));
+  if (millis() - lastRawLog > 5000) {
+    lastRawLog = millis();
+    ESP_LOGI(TAG, "raw status=0x%02X (DR=%u AM=%u)", rawStatus,
+             (rawStatus >> NRF905_STATUS_DR) & 1, (rawStatus >> NRF905_STATUS_AM) & 1);
+  }
   if (lastState != state) {
     ESP_LOGV(TAG, "State change: 0x%02X -> 0x%02X", lastState, state);
     if (state == ((1 << NRF905_STATUS_DR) | (1 << NRF905_STATUS_AM))) {
