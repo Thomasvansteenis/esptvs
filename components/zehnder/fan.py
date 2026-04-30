@@ -19,7 +19,7 @@ from esphome.components.nrf905 import nRF905Component
 DEPENDENCIES = ["nrf905"]
 
 zehnder_ns = cg.esphome_ns.namespace("zehnder")
-ZehnderRF = zehnder_ns.class_("ZehnderRF", fan.FanState)
+ZehnderRF = zehnder_ns.class_("ZehnderRF", cg.Component, fan.Fan)
 
 CONF_NRF905 = "nrf905"
 CONF_FILTER_REMAINING = "filter_remaining"
@@ -27,9 +27,8 @@ CONF_FILTER_RUNTIME = "filter_runtime"
 CONF_ERROR_COUNT = "error_count"
 CONF_ERROR_CODE = "error_code"
 
-CONFIG_SCHEMA = fan.FAN_SCHEMA.extend(
+CONFIG_SCHEMA = fan.fan_schema(ZehnderRF).extend(
     {
-        cv.GenerateID(): cv.declare_id(ZehnderRF),
         cv.Required(CONF_NRF905): cv.use_id(nRF905Component),
         cv.Optional(CONF_UPDATE_INTERVAL, default="30s"): cv.update_interval,
 
