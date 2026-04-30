@@ -140,7 +140,7 @@ void ZehnderRF::setup() {
   this->lastErrorQuery_ = 0;
 
   this->rf_->setOnTxReady([this](void) {
-    ESP_LOGD(TAG, "Tx Ready");
+    ESP_LOGI(TAG, "Tx Ready (RF transmit physically complete)");
     if (this->rfState_ == RfStateTxBusy) {
       if (this->retries_ >= 0) {
         this->msgSendTime_ = millis();
@@ -699,6 +699,12 @@ void ZehnderRF::setSpeed(const uint8_t paramSpeed, const uint8_t paramTimer) {
     ESP_LOGD(TAG, "Waiting for initial RF stabilization...");
     delay(500);  // Wait 500ms for RF to stabilize
 
+    {
+      char hex[FAN_FRAMESIZE * 3 + 1];
+      for (int i = 0; i < FAN_FRAMESIZE; i++) sprintf(hex + i * 3, "%02X ", this->_txFrame[i]);
+      ESP_LOGI(TAG, "TX setSpeed frame: %s", hex);
+    }
+
     this->startTransmit(this->_txFrame, FAN_TX_RETRIES, [this]() {
       ESP_LOGW(TAG, "Set speed timeout");
       this->state_ = StateIdle;
@@ -758,17 +764,14 @@ Result ZehnderRF::startTransmit(const uint8_t *const pData, const int8_t rxRetri
   bool busy = true;
 
   if (this->rfState_ != RfStateIdle) {
-    ESP_LOGW(TAG, "TX still ongoing");
+    ESP_LOGW(TAG, "TX still ongoing (rfState=%d)", this->rfState_);
     result = ResultBusy;
   } else {
     this->onReceiveTimeout_ = callback;
     this->retries_ = rxRetries;
 
-    // Write data to RF
-    // if (pData != NULL) {  // If frame given, load it in the nRF. Else use previous TX payload
-    // ESP_LOGD(TAG, "Write payload");
-    this->rf_->writeTxPayload(pData, FAN_FRAMESIZE);  // Use framesize
-    // }
+    ESP_LOGI(TAG, "startTransmit: writing payload to nRF905, then waiting for airway free");
+    this->rf_->writeTxPayload(pData, FAN_FRAMESIZE);
 
     this->rfState_ = RfStateWaitAirwayFree;
     this->airwayFreeWaitTime_ = millis();
@@ -796,7 +799,7 @@ void ZehnderRF::rfHandler(void) {
           this->onReceiveTimeout_();
         }
       } else if (this->rf_->airwayBusy() == false) {
-        ESP_LOGD(TAG, "Start TX");
+        ESP_LOGI(TAG, "Airway free -> Start TX (FAN_TX_FRAMES=%u)", FAN_TX_FRAMES);
         this->rf_->startTx(FAN_TX_FRAMES, nrf905::Receive);  // After transmit, wait for response
 
         this->rfState_ = RfStateTxBusy;
