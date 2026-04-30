@@ -70,16 +70,14 @@ void ZehnderRF::control(const fan::FanCall &call) {
     ESP_LOGD(TAG, "Control has speed: %u", this->speed);
   }
 
-  switch (this->state_) {
-    case StateIdle:
-      // Set speed
-      this->setSpeed(this->state ? this->speed : 0x00, 0);
-
-      this->lastFanQuery_ = millis();  // Update time
-      break;
-
-    default:
-      break;
+  uint8_t s = this->state ? this->speed : 0x00;
+  if (this->state_ == StateIdle) {
+    this->setSpeed(s, 0);
+    this->lastFanQuery_ = millis();
+  } else {
+    newSpeed = s;
+    newTimer = 0;
+    newSetting = true;
   }
 
   this->publish_state();
@@ -226,7 +224,10 @@ void ZehnderRF::loop(void) {
       if (this->rfState_ == RfStateIdle) {
         // When done, return to idle
         this->state_ = StateIdle;
+      } else {
+        break;
       }
+      // fallthrough to StateIdle when transition just happened
 
       case StateIdle:
         if (newSetting == true) {
